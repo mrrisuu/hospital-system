@@ -3,6 +3,7 @@ package com.project.hospital.common.exception;
 import com.project.hospital.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -90,5 +91,11 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         ErrorResponse body = new ErrorResponse(status.value(), message, request.getRequestURI(), LocalDateTime.now());
         return ResponseEntity.status(status).body(body);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Data integrity violation at {}: {}", request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        return build(HttpStatus.CONFLICT, "Data already exists or violates a constraint", request);
     }
 }
