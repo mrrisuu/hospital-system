@@ -23,7 +23,9 @@ public class DoctorController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<DoctorResponse> create(@Valid @RequestBody DoctorCreateRequest request) {
+    public ResponseEntity<DoctorResponse> create(
+            @Valid
+            @RequestBody DoctorCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(doctorService.create(request));
     }
 
@@ -38,7 +40,8 @@ public class DoctorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DoctorResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<DoctorResponse> getById(
+            @PathVariable Long id) {
         return ResponseEntity.ok(doctorService.getById(id));
     }
 

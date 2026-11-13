@@ -64,7 +64,8 @@ public class DoctorService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<DoctorResponse> getAll(Long poliId, String name, int page, int size) {
+    public PageResponse<DoctorResponse> getAll(
+            Long poliId, String name, int page, int size) {
         if (page < 0 || size < 1 || size > 100) {
             throw new BusinessRuleViolationException(
                     "Page must be at least 0 and size must be between 1 and 100");
