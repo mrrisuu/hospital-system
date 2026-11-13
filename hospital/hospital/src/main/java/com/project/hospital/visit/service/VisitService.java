@@ -100,6 +100,39 @@ public class VisitService {
         return cancel(findVisit(id));
     }
 
+    @Transactional
+    public VisitResponse callVisit(String doctorEmail, Long id) {
+        // kunjungan dokter lain dianggap "tidak ditemukan"
+        Visit visit = visitRepository.findByIdAndDoctorUserEmail(id, doctorEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Visit not found"));
+
+        if (visit.getStatus() != VisitStatus.WAITING) {
+            throw new BusinessRuleViolationException("Only waiting visits can be called");
+        }
+        if (!visit.getVisitDate().equals(LocalDate.now(ZONE))) {
+            throw new BusinessRuleViolationException("Only today's visits can be called");
+        }
+
+        visit.setStatus(VisitStatus.CALLED);
+
+        return visitMapper.toResponse(visitRepository.save(visit));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<VisitResponse> getDoctorQueue(String doctorEmail, LocalDate date,
+                                                      VisitStatus status, int page, int size) {
+        Doctor doctor = doctorRepository.findByUserEmail(doctorEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Doctor not found"));
+
+        LocalDate queueDate = date != null ? date : LocalDate.now(ZONE);
+        Pageable pageable = pageable(page, size, Sort.by(Sort.Order.asc("queueNumber")));
+
+        Page<Visit> result = visitRepository.findAll(
+                VisitSpecification.filter(doctor.getId(), queueDate, status), pageable);
+
+        return PageResponse.from(result.map(visitMapper::toResponse));
+    }
+
     /*
         HELPER
      */

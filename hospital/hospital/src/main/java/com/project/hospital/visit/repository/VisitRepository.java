@@ -43,4 +43,9 @@ public interface VisitRepository
             """)
     int findMaxQueueNumber(@Param("doctorId") Long doctorId,
                            @Param("visitDate") LocalDate visitDate);
+
+    @EntityGraph(attributePaths = {"patient", "doctor", "doctor.poli", "schedule"})
+    Optional<Visit> findByIdAndDoctorUserEmail(Long id, String email);
+
+    boolean existsByDoctorUserEmailAndPatientId(String email, Long patientId);
 }
