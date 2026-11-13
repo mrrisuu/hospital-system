@@ -1,12 +1,12 @@
 package com.project.hospital.doctor.repository;
 
 import com.project.hospital.doctor.entity.Doctor;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -24,4 +24,8 @@ public interface DoctorRepository
     boolean existsByLicenseNumber(String licenseNumber);
 
     boolean existsByLicenseNumberAndIdNot(String licenseNumber, Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Doctor d where d.id = :id")
+    Optional<Doctor> findByIdForUpdate(@Param("id") Long id);
 }
