@@ -88,4 +88,27 @@ public class VisitController {
     public ResponseEntity<VisitResponse> cancelByStaff(@PathVariable Long id) {
         return ResponseEntity.ok(visitService.cancelByStaff(id));
     }
+
+    @PreAuthorize("hasRole('DOCTOR')")
+    @GetMapping("/doctor/me")
+    public ResponseEntity<PageResponse<VisitResponse>> getDoctorQueue(
+            Authentication authentication,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) VisitStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(
+                visitService.getDoctorQueue(authentication.getName(), date, status, page, size));
+    }
+
+    @PreAuthorize("hasRole('DOCTOR')")
+    @PatchMapping("/{id}/call")
+    public ResponseEntity<VisitResponse> call(
+            Authentication authentication,
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(visitService.callVisit(authentication.getName(), id));
+    }
 }

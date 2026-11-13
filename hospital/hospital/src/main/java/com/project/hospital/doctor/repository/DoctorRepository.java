@@ -28,4 +28,7 @@ public interface DoctorRepository
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from Doctor d where d.id = :id")
     Optional<Doctor> findByIdForUpdate(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"user", "poli"})
+    Optional<Doctor> findByUserEmail(String email);
 }
