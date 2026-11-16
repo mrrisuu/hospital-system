@@ -148,6 +148,10 @@ public class VisitService {
         Doctor doctor = doctorRepository.findByIdForUpdate(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor not found"));
 
+        if (!doctor.getUser().isActive()) {
+            throw new BusinessRuleViolationException("Doctor is not active");
+        }
+
         if (visitRepository.existsByPatientIdAndDoctorIdAndVisitDateAndStatusNot(
                 patient.getId(), doctorId, visitDate, VisitStatus.CANCELLED)) {
             throw new ResourceConflictException(
