@@ -1,5 +1,7 @@
 package com.project.hospital.security;
 
+import com.project.hospital.user.entity.User;
+import com.project.hospital.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -14,6 +16,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Component
@@ -21,6 +26,7 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -41,24 +47,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = jwtService.parseClaims(token);
             String email = claims.getSubject();
-            String role = claims.get("role", String.class);
 
-            if (email != null && role != null
-                    && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                userRepository.findByEmail(email)
+                        .filter(user -> isTokenStillValid(user, claims))
+                        .ifPresent(user -> {
+                            UsernamePasswordAuthenticationToken authentication =
+                                    new UsernamePasswordAuthenticationToken(
+                                            email,
+                                            null,
+                                            List.of(new SimpleGrantedAuthority(
+                                                    "ROLE_" + user.getRole().name()))
+                                    );
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of(new SimpleGrantedAuthority("ROLE_" + role))
-                        );
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                            SecurityContextHolder.getContext().setAuthentication(authentication);
+                        });
             }
         } catch (JwtException | IllegalArgumentException e) {
             SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isTokenStillValid(User user, Claims claims) {
+        if (!user.isActive() || claims.getIssuedAt() == null) {
+            return false;
+        }
+
+        LocalDateTime changedAt = user.getPasswordChangedAt();
+        if (changedAt == null) {
+            return true;
+        }
+
+        // iat di JWT hanya presisi detik, jadi waktu ganti password dipotong ke detik
+        LocalDateTime issuedAt = LocalDateTime.ofInstant(
+                claims.getIssuedAt().toInstant(), ZoneId.systemDefault());
+
+        return !issuedAt.isBefore(changedAt.truncatedTo(ChronoUnit.SECONDS));
     }
 }
